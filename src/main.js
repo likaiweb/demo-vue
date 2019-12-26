@@ -1,16 +1,24 @@
+/*
+ * @Date: 2019-12-25 16:06:20
+ * @Author: 李凯
+ * @LastEditors  : 李凯
+ * @LastEditTime : 2019-12-26 15:43:32
+ * @Description: 入口文件
+ * @FilePath: /vue-test/src/main.js
+ */
 import Vue from 'vue'
 import App from './App.vue'
-import router from './route/index'
-import store from './store/index'
-import './libs/echarts';
-import ElementUI from 'element-ui';
-import 'element-ui/lib/theme-chalk/index.css';
-
-Vue.use(ElementUI)
+import router from "@/router/index";
+import store from "@/store/index";
+import '@/libs/mixin'  // 混入
+import '@/libs/prototype'  // 原型方法
 Vue.config.productionTip = false
 
+
+import {} from '@/libs/ajax'
+
 new Vue({
-  render: h => h(App),
   router,
-  store
+  store,
+  render: h => h(App),
 }).$mount('#app')

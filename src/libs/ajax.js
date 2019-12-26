@@ -1,118 +1,117 @@
+/*
+ * @Date: 2019-12-26 11:15:04
+ * @Author: 李凯
+ * @LastEditors  : 李凯
+ * @LastEditTime : 2019-12-26 14:56:20
+ * @Description: ajax封装
+ * @FilePath: /vue-test/src/libs/ajax.js
+ */
 import axios from 'axios'
-import qs from 'qs'
-import router from '../route/index'
-import {Loading} from 'element-ui'
-
-axios.defaults.baseURL = ''
-axios.defaults.timeout=10000
-
-
-// 请求拦截
-axios.interceptors.request.use(
-    reqConfig => {
-      // 每次发送请求之前判断 localStorage 中是否存在token
-      // 如果存在，则统一在http请求的header都加上token，这样后台根据token判断你的登录情况
-      // 即使本地存在token，也有可能token是过期的，所以在响应拦截器中要对返回状态进行判断
-      // const token = localStorage.getItem('token')
-      // const token = 'dbrkon78l4mja4eq2vs8hhl8staio4nj'  // 测试使用
-      // const token = ''  // 测试使用  
-      // token && (reqConfig.headers['X-WX-Token'] = token)
-      reqConfig.params && (reqConfig.params.qrId = 46);
-      return reqConfig;
-    },
-    reqError => {
-      return Promise.reject(reqError)
+import envConfig from './config';
+const Axios=new axios.create({
+    timeout: 60000,
+    responseType: "json",
+    headers: {
+        "Content-Type": "application/json;charset=UTF-8"
     }
-  )
-  
-  // 响应拦截
-  axios.interceptors.response.use(
-    resData => {
-      // 如果返回的状态码为200，说明接口请求成功，可以正常拿到数据
-      // 否则的话抛出错误
-      if (resData.status === 200) {
-        const resultNum = resData.data.errno || resData.data.code;
-        const resultMsg = resData.data.errmsg || resData.data.msg;
-        switch (resultNum) {
-          case 0:
-            // store.commit('changeLoginStatus', true)
-            return Promise.resolve(resData.data);
-  
-          case 401:
-            // store.commit('changeLoginStatus', false);
-            router.replace({
-              name: 'login',
-              query: {
-                // 记住当前页面, 登录后回跳
-                backName: router.currentRoute.name
-              }
-            });
-            break;
-  
-          case 500:
-            break;
-  
-          default:
-              
-          // reject(res);
+})
+const CancelToken = axios.CancelToken;
+// 添加请求拦截器
+Axios.interceptors.request.use(config=>{
+    // 在发送请求之前做些什么
+    let requestName = config.url
+    // 取消重复请求
+    if (requestName) {
+        if (axios[requestName] && axios[requestName].cancel) {
+            axios[requestName].cancel("取消重复请求=>" + requestName)
         }
-      } else {
-        return Promise.reject(resData.data);
-      }
-    },
-    resError => {
-      console.error(resError);
-      return Promise.reject(resError);
+        config.cancelToken = new CancelToken(c => {
+            axios[requestName] = {}
+            axios[requestName].cancel = c
+        })
     }
-  )
-  
-  /**
-   * GET 请求
-   * @param { String } url    请求地址
-   * @param { Object } params   参数对象
-   * @param { Object } config   配置对象
-   * @param { Function } errCallback   回调函数
-   */
-  export const $get = (url = '', params = {}, config = {}, errCallback = null) => {
-    return axios.get(url, { params }, config).then(res => {
-      return res;
-    }).catch(err => {
-      errCallback && errCallback();
-      return err;
-    })
-  }
-  
-  /**
-   * POST 请求
-   * @param { String } url    请求地址
-   * @param { Object } params   参数对象
-   * @param { Object } config   配置对象
-   * @param { Function } errCallback   回调函数
-   */
-  export const $post = (url = '', params = {}, config = {}, errCallback = null) => {
-  
-    const _config = Object.assign({
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    }, config);
-  
-    let resultParams;
-    if (_config.headers['Content-Type'].toLowerCase().indexOf('json') > -1) {
-      resultParams = params;
-    } else {
-      if (_config.FormData) {
-        resultParams = params;
-      } else {
-        resultParams = qs.stringify(params);
-      }
+    // 除图片外添加token，等头文件
+    if (requestName.indexOf("/api/pub/upImgsBase64") == -1) {
+        if (utils.localGetItem("token")) {
+            config.headers["yms-token"] = utils.localGetItem("token");
+        }
+        config.headers["container"] = utils.localGetItem("container");
     }
-  
-    return axios.post(url, resultParams, _config).then(res => {
-      return res;
-    }).catch(err => {
-      errCallback && errCallback();
-      return err;
+    return config;
+}, error=>{
+    // 对请求错误做些什么
+    return Promise.reject(error);
+});
+
+// 添加响应拦截器
+Axios.interceptors.response.use(response=> {
+    // 对响应数据做点什么
+    return response;
+}, error =>{
+    // 对响应错误做点什么
+    if(error.response){
+        // 未登录
+        if(error.response.status===401){
+            return router.replace({
+                path: "/"
+            });
+        }
+        // 未找到
+        if(error.response.status===404){
+
+        }
+        // 错误
+        if (!!error.response.data) {
+            
+        } else if (
+            !error.response.data &&
+            error.response.status !== 401 &&
+            error.response.status !== 404
+        ){
+            
+        }
+    }
+    return Promise.reject(error);
+});
+/**
+ * @description: get请求
+ * @param {string} url - 请求地址 
+ * @param {object} params - 请求参数 
+ * @return: promise
+ */
+const $get=(url,params={})=>{
+    return new Promise((resolve,reject)=>{
+        if(typeof params.showLoading==='undefined'){
+            // 展示loading
+        }
+        Axios.get(envConfig.baseURL+ url, {
+            params:params.params
+        }).then(res=>{
+            resolve(res);
+        }).catch(err=>{
+            reject(err)
+        })
     })
-  }
-  
+}
+/**
+ * @description: post请求
+ * @param {string} url - 请求地址 
+ * @param {object} params - 请求参数 
+ * @return: promise
+ */
+const $post = (url, params = {}) => {
+    return new Promise((resolve, reject) => {
+        if (typeof params.showLoading === 'undefined') {
+            // 展示loading
+        }
+        Axios.post(envConfig.baseURL + url, params.params).then(res => {
+            resolve(res);
+        }).catch(err => {
+            reject(err)
+        })
+    })
+}
+export default {
+    $get,
+    $post
+}
