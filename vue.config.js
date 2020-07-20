@@ -1,15 +1,17 @@
 /*
  * @Date: 2019-12-25 16:25:46
  * @Author: 李凯
- * @LastEditors  : 李凯
- * @LastEditTime : 2020-01-14 15:38:42
+ * @LastEditors: 李凯
+ * @LastEditTime: 2020-07-20 10:43:08
  * @Description: 配置文件
- * @FilePath: /vue-test/vue.config.js
+ * @FilePath: /vue-demo/vue.config.js
  */
 const path = require('path');
 const time = new Date().getTime();
 module.exports = {
-    outputDir: '/' + process.env.outputDir + '/',
+    publicPath: "./",
+    // 输出目录
+    // outputDir: '/' + process.env.outputDir + '/',
     lintOnSave: false,  // 禁止报错
     productionSourceMap: false,  // 资源压缩
     pluginOptions:{
@@ -18,6 +20,15 @@ module.exports = {
             patterns:[
                 path.resolve(__dirname,'./src/style/theme.less')
             ]
+        }
+    },
+    css: {
+        loaderOptions: {
+            less: {
+                globalVars: {
+                    fontTheme: '#252C22',
+                }
+            }
         }
     },
     configureWebpack: { // webpack 配置
